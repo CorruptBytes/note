@@ -168,6 +168,20 @@ psql -U userName
 
 ![image-20260315181147822](D:\笔记\图片\image-20260315181147822.png)
 
+<h4>JsonB</h4>
+
+表示二进制JSON,这是在`PostgreSQL`中存储JSON数据的一种更高效且可索引的数据类型。
+
+```
+CREATE INDEX inx_name on table USING gin (jsonb_column)
+```
+
+- `gin`即为倒排索引，允许快速检索`JSONB`中特定数据
+
+```
+CREATE INDEX inx_name ON table USING gin(to_tsvector('engilsh',text_column))
+```
+
 # `Schema`(模式)
 
 `Schema` 是`PostgreSQL`中数据库内部的命名空间（namespace），用于在逻辑上对数据库中的表、视图、函数等数据库对象进行分组，并可以对这些对象进行独立的权限管理。
