@@ -2143,4 +2143,7 @@ create table `lock_table` (
 
 - 业务层限制分页数，或引入`ES`等适合超大分页的组件。
 
+<h3>MYSQL如何实现乐观锁</h3>
+
+
 ### Bigint传到前端是不是精度不够?
