@@ -2155,7 +2155,43 @@ SET stock = stock - 1, version = version + 1
 WHERE id = ? AND version = ?
 ```
 
+<h4>MYSQL解决超卖问题</h4>
 
+超卖问题是由于事务并发修改导致库存变负数。
 
+```mysql
+SELECT stock FROM product WHERE id = 1; -- 100
 
-### Bigint传到前端是不是精度不够?
+-- 两个线程同时执行
+UPDATE product SET stock = stock - 1 WHERE id = 1;
+```
+
+解决方案有多种：
+
+- 乐观锁
+
+  ```mysql
+  -- 利用条件更新，执行后通过更新行数判断是否成功
+  UPDATE product
+  SET stock = stock - 1
+  WHERE id = 1 AND stock > 0;
+  
+  -- 版本号法(乐观锁升级)
+  UPDATE product
+  SET stock = stock - 1, version = version + 1
+  WHERE id = 1 AND version = 10;
+  ```
+
+- 悲观锁
+
+  ```mysql
+  -- 在事务开启后立刻通过当前读为记录加锁后再判断是否更新
+  SELECT stock FROM product WHERE id = 1 FOR UPDATE;
+  ```
+
+  - 性能差，高并发场景下容易阻塞
+
+- 添加缓存
+
+  使用`Redis`缓存库存数据，在`Redis`中扣减库存，通过异步更新将缓存数据同步到MYSQL保证最终一致性。
+
