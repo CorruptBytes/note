@@ -658,10 +658,14 @@ Function Calling 的本质，就是在模型训练阶段教会模型一套“工
 
 ## MCP
 
-`MCP`是一个通信协议，用来规范`Agent`和`Tools`之间怎么交互。`Agent`接收到AI模型的输出后，需要解析输出表调用对应的`Agent Tools`,最简单的做法是`Agent`与`Agent Tools`写在同一个程序中，在使用时直接函数调用即可。但是这将`Agent`与`Agent Tools`强耦合，`Agent Tools`也无法复用。因此，可用将`Agent Tools`变成服务，统一托管，所有`Agent`均可以来调用。
+模型上下文协议(`Model Context Protocol`)是一个通信协议，用来规范`Agent`和`Tools`之间怎么交互。`Agent`接收到AI模型的输出后，需要解析输出表调用对应的`Agent Tools`,最简单的做法是`Agent`与`Agent Tools`写在同一个程序中，在使用时直接函数调用即可。但是这将`Agent`与`Agent Tools`强耦合，`Agent Tools`也无法复用。因此，可用将`Agent Tools`变成服务，统一托管，所有`Agent`均可以来调用。
 
 在 MCP 中，提供工具和资源的一方称为 *MCP Server*，发起调用的一方称为 *MCP Client*。
  MCP 作为通信协议，规定了 MCP Server 与 MCP Client 之间的交互方式，以及 MCP Server 必须暴露的标准接口（例如：查询可用工具列表、获取工具定义、执行工具调用等）。
+
+## `Agentic AI`
+
+
 
 # 部署
 
@@ -791,3 +795,48 @@ print(response.choices[0].message.content)
 
 - 本质上调用模型的API就是向部署了模型的服务器发送携带特定格式数据的http请求
 
+## `SSE`
+
+`SSE`意为服务器发送事件(`Server-Sent Events`)，是一种基于`HTTP`协议实现的服务器推送机制，可以实现服务器向浏览器的单向实时事件流传输。
+
+在`SSE`通信中，客户端发起一次 HTTP 请求后，服务端通过保持响应未结束的方式形成`HTTP`长连接。服务端在此期间以 `text/event-stream` 格式持续向客户端分块推送数据，客户端可以实时接收这些数据。
+
+- `SSE`底层通常基于 HTTP/1.1 的分块传输实现流式数据发送，它在`HTTP chunked`的基础上定义了一套标准的数据格式，浏览器根据此格式，可以解析出一条条由服务端定义的消息(或者说事件)，并以此作为回调的单位，而不是不可控的HTTP分块。
+
+<h3>特点</h3>
+
+- **单向通信：**服务端向客户端持续推送
+- **基于 HTTP：**无需协议升级，直接使用 HTTP 建立连接
+- **自动重连：**浏览器在连接断开后会自动重新建立连接
+- **数据格式简单：**基于 `text/event-stream` 的文本流格式
+- **浏览器原生支持：**通过 `EventSource` API 直接使用
+
+<h3>实现</h3>
+
+<h4>Spring</h4>
+
+**`SseEmitter`**
+
+底层基于`Servlet`，一个线程处理一个连接，不适合高并发场景。
+
+```java
+@GetMapping("/sse")
+public SseEmitter sse() {
+    SseEmitter emitter = new SseEmitter();
+    new Thread(() -> {
+        try {
+            for (int i = 0; i < 5; i++) {
+                emitter.send("message " + i);
+                Thread.sleep(1000);
+            }
+            emitter.complete();
+        } catch (Exception e) {
+            emitter.completeWithError(e);
+        }
+    }).start();
+
+    return emitter;
+}
+```
+
+- `Controller`返回`emitter`后，不会关闭`HTTP`响应，知道`emitter`执行`comptlete`或`completeWithError`后响应才会关闭。
