@@ -2,11 +2,11 @@
 
 ## 事务失效
 
-### 常见情况
+有时候会出现在方法上添加了`@Transactional`注解，但运行时事务没有开启。常见的事务失效原因有：
 
 **1. 方法不是 `public` 修饰**
 
-**原因**：Spring AOP 只能对 `public` 方法生成代理，非 `public` 方法无法被代理，事务不生效。
+**原因**：Spring AOP 的`JDK`动态代理只能对 `public` 方法生效，非 `public` 方法无法被代理，因此事务不生效。
 
 **解决方案**：将事务方法修改为 `public`。
 
@@ -21,15 +21,44 @@ public class UserService {
 }
 ```
 
-------
-
 **2. 内部调用事务方法**
 
 **原因**：内部调用使用的是原始对象 `this`，绕过 Spring 代理对象，事务不生效。
 
 **解决方案**
 
-- **通过外部类调用事务方法**
+- **拆分成两个类**
+
+  将原版的`service`拆分为业务类和事务类，在事务类上添加`@Transactional`，由业务类调用事务类完成业务
+
+  ```java
+  @Service
+  public class CouponTxService {
+      @Transactional
+      public void doReceive(Long userId, Long couponId) {
+  
+          int count = couponMapper.countByUser(userId, couponId);
+          if (count > 0) {
+              throw new RuntimeException("已领取");
+          }
+  
+          couponMapper.insert(userId, couponId);
+      }
+  }
+  @Service
+  public class CouponService {
+  
+      @Autowired
+      private CouponTxService couponTxService;
+  
+      public void receiveCoupon(Long userId, Long couponId) {
+  
+          synchronized (userId.toString().intern()) {
+              couponTxService.doReceive(userId, couponId); // ✅ 外部调用
+          }
+      }
+  }
+  ```
 
 - **注入自身代理对象调用。**
 
@@ -50,7 +79,7 @@ public class UserService {
   }
   ```
 
-- **通过`Spring AOP`的API获得代理对象**
+- **通过 AOP 上下文获得代理对象**
 
   1. 引入`Aspectj`依赖
 
@@ -78,11 +107,9 @@ public class UserService {
      serviceProxy.sell();
      ```
 
-------
-
 **3. 异常被捕获**
 
-**原因**：事务依赖异常回滚，如果事务方法内部捕获异常，事务无法感知到异常，无法回滚。
+**原因**：事务依赖异常回滚，如果事务方法内部捕获异常，代理对象无法感知到异常，就无法回滚。
 
 **解决方案**：不要在事务方法内部捕获异常，或者捕获异常后手动标记回滚。
 
@@ -97,11 +124,9 @@ public void saveUser() {
 }
 ```
 
-------
-
 **4. 回滚异常类型不匹配**
 
-**原因**：默认情况下，Spring 事务只对 `RuntimeException` 及其子类异常进行回滚。
+**原因**：默认情况下，Spring 事务只对 `RuntimeException` 及其子类异常进行回滚
 
 **解决方案**：通过 `rollbackFor` 属性指定异常类型。
 
@@ -111,8 +136,6 @@ public void saveUser() throws Exception {
     throw new Exception();
 }
 ```
-
-------
 
 **5. 事务传播行为错误**
 
@@ -126,8 +149,6 @@ public void newTransactionMethod() {
     // 新事务方法
 }
 ```
-
-------
 
 **6. 当前类没有被 Spring 管理**
 
@@ -145,6 +166,14 @@ public class UserService {
     }
 }
 ```
+
+**7 . 多线程导致事务上下文丢失**
+
+**原因**：事务是绑定在当前线程的`ThreadLocal`
+
+**解决方案**：不要在事务中使用多线程
+
+
 
 # IOC
 

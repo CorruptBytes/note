@@ -1239,6 +1239,12 @@ Java8时提供
 
 是对集合的中间处理步骤，方法调用后，仍然返回一个`Stream`，还可以继续调用其他方法。
 
+```
+Stream<R> flatMap(Function<? super T, ? extends Stream<? extends R>> mapper)
+```
+
+
+
 ### 终结方法
 
 是对集合处理的最终步骤，方法调用后，不可以再调用其他方法。
