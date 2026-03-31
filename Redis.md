@@ -1424,7 +1424,7 @@ public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisC
 
 <h3>缓存穿透</h3>
 
-查询的 **数据在缓存中不存在，同时在数据库中也不存在**，导致每次请求都会访问数据库。
+请求的 **数据在缓存中不存在，同时在数据库中也不存在**，导致每次请求都会访问数据库。
 
 <h4>解决方案</h4>
 

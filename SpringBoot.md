@@ -158,7 +158,7 @@ public class SpringbootStartApplication {
 
 ## 环境配置文件
 
-> 又叫做Profile配置文件,用于定义特定环境的配置,比如开发环境（`dev`）、测试环境（`test`）、生产环境（`prod`）。名称为`application-{环境名}.后缀`。
+又叫做Profile配置文件,用于定义特定环境的配置,比如开发环境（`dev`）、测试环境（`test`）、生产环境（`prod`）。名称为`application-{环境名}.后缀`。
 
 **激活方式:**
 
