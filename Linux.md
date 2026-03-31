@@ -76,7 +76,7 @@ sed [OPTION]... {script-only-if-no-other-script} [input-file]...
 
 <h4>脚本格式</h4>
 
-`sed`脚本的基本格式为`[address1[,address2]]<command>`表示对匹配 `address` 的行执行 `command` 编辑命令,`address`可选，如果不指定，则对 **所有行** 执行该命令。
+`sed`脚本的基本格式为`[address1[,address2]]<command>`表示对匹配 `address` 的行执行 `command` 编辑命令。`address`可选，如果不指定，则对 **所有行** 执行该命令。
 
 `address`可以通过多种方式指定：
 
