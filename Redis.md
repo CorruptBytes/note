@@ -1529,6 +1529,38 @@ public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisC
 
 - 如果锁已被获取，新的线程获取不到互斥锁，则会直接返回旧数据
 
+# `Pub/Sub`
+
+`Pub/Sub`(发布订阅)是`Redis2.0`引入的消息传递模型。在`Pub/Sub`模型中，消费者可以订阅一个或多个`channel`，生产者向对应`channel`发送消息后，所有订阅者都会接收到消息。
+
+<h4>命令</h4>
+
+**订阅频道**
+
+```bash
+#订阅一个或多个频道
+SUBSCRIBE channel [channel ...]
+#订阅与pattern格式匹配的所有频道
+PSUBSCRIBE pattern [pattern ...]
+```
+
+- `pattern`支持三种通配符：
+  - `?`：代表任意个一个字符
+  - `*`：代表任意0个或多个字符
+  - `[char...]`:代表`[]`中的任意一个字符。
+
+**向频道发送消息**
+
+```
+PUBLISH channel message
+```
+
+<h4>特点</h4>
+
+- 采用发布订阅模型，支持多生产者与多消费者
+- 不支持数据持久化，无法避免消息丢失
+- 消息堆积有上限，超出时数据丢失
+
 # 全局ID生成器
 
 > 一种在分布式系统中用来生成全局唯一ID的工具
@@ -1755,7 +1787,7 @@ Redis提供了`redis.call("命令名称","key","其他参数...")`函数操作Re
 
 # Redisson
 
-> 是一个在Redis基础上实现的Java驻内存数据网格。提供了一系列分布式系统中的常用Java对象和分布式系统服务。包含了各种分布式锁的实现
+是一个在Redis基础上实现的Java驻内存数据网格。提供了一系列分布式系统中的常用Java对象和分布式系统服务。包含了各种分布式锁的实现
 
 ## 相关依赖
 
@@ -1813,6 +1845,38 @@ if(isLock){
     }
 }
 ```
+
+## `RPermitExpirableSemaphore`
+
+基于`Redis`实现的一个支持可过期许可的分布式信号量。
+
+**原理**
+
+底层基于`Hash`,`ZSet`,`Lua`脚本和`Pub/Sub`实现。
+
+**特点**
+
+- 每一个`Permit`有唯一ID
+- 每个`Permit`可设置过期时间
+- 超时自动回收
+
+<h4>创建对象</h4>
+
+```java
+RPermitExpirableSemaphore semaphore = redissonClient.getPermitExpirableSemaphore(
+    String SEMAPHORE_NAME);
+```
+
+<h4>常用方法</h4>
+
+**尝试初始化信号量的最大许可数**
+
+```
+boolean trySetPermits(int max)
+```
+
+- 对于一个信号量，只可能成功初始化一次，返回`true`；其余尝试均会失败，返回`false`。
+- 常用于在分布式环境中安全地初始化一次信号量容量
 
 # Feed流
 

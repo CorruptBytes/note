@@ -254,7 +254,7 @@ MiB Swap:   4096.0 total,   4096.0 free,      0.0 used.  14265.1 avail Mem
 向进程发送信号。可用于终止进程。
 
 ```bash
- kill [options] pid
+kill [options] pid
 ```
 
 - 默认发送信号为**SIGTERM（15）**，即请求进程优雅退出
@@ -414,7 +414,7 @@ Swap:          2G          0G         2G
 
 WSL 1是上一代WSL，WSL 2是现在默认安装的WSL版本。它们的实现原理有本质的不同。
 
-`WSL 1`的本质是一个兼容层，它将`Linux`系统调用翻译为Windows系统调用，并不具有真正的 Linux 内核。这导致`WSL 1`不完全兼容 Linux，且因为缺少 `namespace`、`cgroups` 等内核能力，所以无法运行 Docker等依赖内核特性的程序。
+`WSL 1`的本质是一个兼容层，它将`Linux`系统调用翻译为Windows系统调用，并不具有真正的 Linux 内核。这导致`WSL 1`不完全兼容 Linux，且因为缺少 `namespace`、`cgroups` 等内核能力，所以无法运行 Docker 等依赖内核特性的程序。
 
 `WSL 2`基于轻量级虚拟化技术(Hypervisor,简称为Hyper-V)，运行一个真正的 Linux 内核。由于拥有完整的内核能力，因此在兼容性、网络支持和容器运行方面表现更好。
 

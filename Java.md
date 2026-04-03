@@ -1251,11 +1251,38 @@ Java8时提供
 Stream<R> flatMap(Function<? super T, ? extends Stream<? extends R>> mapper)
 ```
 
-
-
 ### 终结方法
 
 是对集合处理的最终步骤，方法调用后，不可以再调用其他方法。
+
+## `ThreadLocal`
+
+
+
+### `TTL`
+
+全称`TransmittableThreadLocal`,是阿里开源的一个增强版 `ThreadLocal`。相比于`ThreadLocal`，它可以实现跨线程(尤其是线程池)的上下文传递。
+
+**原理**
+
+`TransmittableThreadLocal` 将 `Runnable` 和 `Callable` 包装为 `TtlRunnable` 和 `TtlCallable`。在任务**提交（包装）时**捕获当前线程的 `ThreadLocal` 上下文，并在任务执行前将上下文设置到执行线程中；任务执行结束后，再恢复或清理执行线程原有的上下文，从而实现跨线程的上下文安全传递。
+
+- `TTL`只会捕获和传递 `TransmittableThreadLocal` 的值，普通的 `ThreadLocal` 不会被捕获和传递。
+
+<h4>使用示例</h4>
+
+`TTL`与`ThreadLocal`主要的使用区别是，如果希望在线程之间传递上下文，在提交任务时需要使用`TtlRunnable`或`TtlCallable`包装原始任务。
+
+```java
+static TransmittableThreadLocal<String> ttl = new TransmittableThreadLocal<>();
+ExecutorService executor = Executors.newFixedThreadPool(1);
+ttl.set("userA");
+executor.submit(TtlRunnable.get(() -> {
+    System.out.println("TTL: " + ttl.get());
+}));
+```
+
+
 
 # 模块化
 

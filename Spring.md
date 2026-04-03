@@ -427,6 +427,49 @@ Spring AOP 的实现依赖于动态代理。
 - **基于CGLIB的动态代理：**当被代理的类没有实现任何接口且没有被`final`修饰时，Spring会使用CGLIB库生成一个被代理类的子类对象作为代理对象(底层使用`CglibAopProxy`)。CGLIB（`CodeGeneration Library`）是一个第三方代码生成库，通过继承方式实现动态代理。
   - 可以在通过`<aop:config proxy-target-class="true">`属性强制使用CGLIB动态代理。 
 
+## `JoinPoint`
+
+`JoinPoint`（连接点）表示程序执行过程中一个可以被 AOP 拦截的位置,它封装了当前被拦截方法调用时的上下文信息。
+
+-  `JoinPoint` 只提供访问能力，并不能控制方法的执行流程。
+
+<h3>常用方法</h3>
+
+**获取方法参数**
+
+```
+Object[] getArgs()
+```
+
+**获取签名对象**
+
+```
+Signature getSignature()
+```
+
+- `SpringAOP`只支持方法级别的连接点，因此签名对象通常为一个`MethodSignature`实例，因此可强转`Signature`对象为方法签名对象，以访问方法的相关信息。
+
+**获取被代理的真实对象**
+
+```
+Object getTarget()
+```
+
+**获取代理对象**
+
+```
+Object getThis()
+```
+
+**打印调用信息**
+
+```
+String toShortString()
+String toLongString()
+```
+
+
+
 # Bean
 
 ## 生命周期
