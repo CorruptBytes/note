@@ -1056,9 +1056,48 @@ HELLO [protover [AUTH username password] [SETNAME clientname]]
   PFMERGE destkey [sourcekey [sourcekey ...]]
   ```
 
-# 哨兵
+# `Redis`实现消息队列
 
-> 
+## `Stream`
+
+Stream是Redis5.0引入的一种新数据类型，用以实现一个功能完善的消息队列
+
+<h4>相关命令</h4>
+
+**XADD**
+
+![image-20250514154940093](D:\笔记\图片\image-20250514154940093.png)
+
+**XREAD**
+
+![image-20250514154923305](D:\笔记\图片\image-20250514154923305.png)
+
+> XREAD如果使用$,会读取命令执行后的最新的消息，如果命令执行前存在消息，不会读取
+
+消费者组
+
+> Consumer Group，将多个消费者划分到一个组中，监听同一个队列
+
+- 特点
+
+  1. 消息分流
+
+     > 队列中的消息会分流给组内的不同消费者，而不是重复消费，从而加快消息处理的速度
+
+  2. 消息标示
+
+     > 消费者组会维护一个标示，记录最后一个被处理的消息，哪怕消费者宕机重启，还会从标示之后读取消息。确保每一个消息都会被消费
+
+  3. 消息确认
+
+     > 消费者获取消息后，消息处于pending状态，并存入一个pending-list。当处理完成后需要通过XACK来确认消息，标记消息为已处理，才会从pending-list移除。
+
+- 命令
+
+  - XGROUP CREATE key groupName ID [MKSTREAM]
+  - XGROUP DESTORY key groupName
+  - XGROUP CREATECONSUMER key groupname consumername
+  - XGROUP DELCONSUMER key groupname consumername
 
 # Java客户端
 
