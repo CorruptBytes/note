@@ -81,11 +81,15 @@ flowchart TB
 
     Checkpointer --> DataFiles
     BGWriter --> SharedBuffers
-    WALWriter --> WAL
+   WALWriter --> WAL
     AutoVacuum --> DataFiles
 ```
 
+# 命令行工具
 
+## `pg_config`
+
+用于获取`postgresql`的相关配置。
 
 # 命令
 
@@ -542,7 +546,6 @@ $$ LANGUAGE plpgsql;
 ```
 CAST(data AS type)
 data::type
-
 ```
 
 <h3>隐式类型转换</h3>
@@ -551,7 +554,109 @@ data::type
 
 - 小整数可以自动转换为大整数
 - 整数可以自动转换为浮点数
-- 
+
+# 扩展
+
+`Postgres`支持扩展，可以通过添加扩展的形式获得向量数据库，时序数据库，GIS数据库，全文搜索 / 模糊搜索等多种强大功能。
+
+`Postgres`中的所有扩展在安装完成后，都需要手动启用才可以生效
+
+```
+CREATE EXTENSION extension;
+```
+
+## `pgvector`
+
+`pgvector`可以将`postgresql`扩展为向量数据库，它为`postgres`添加了向量类型，向量索引和相似度检索能力。
+
+**优点**
+
+- 无需引入新的中间件
+- 可以直接使用`SQL`操作
+
+**缺点**
+
+- 分布式能力弱
+- 只适合中小规模数据量，大规模性能不如专用数据库(如`Milvus`)。
+
+<h3>安装</h3>
+
+**源码安装**
+
+在`linux`环境下下载`pgvector`源码后编译安装。
+
+```
+git clone https://github.com/pgvector/pgvector.git
+cd pgvector
+make
+make install
+```
+
+**`Docker`**
+
+直接使用带有`pgvector`的`postgresql`镜像
+
+```
+docker run -d \
+  -p 5432:5432 \
+  -e POSTGRES_PASSWORD=123456 \
+  pgvector/pgvector
+```
+
+****
+
+扩展安装完成后，需要手动启用扩展
+
+```
+CREATE EXTENSION vector;
+```
+
+<h3>使用</h3>
+
+`pgvector`为`Postgres`添加了向量数据类型(`Vector(n)`)，相似度检索运算符(`<=>`,`<->`,`<#>`)，向量索引(`IVF_FLAT`,`HNSW`)
+
+**创建向量类型字段**
+
+```sql
+CREATE TABLE items (
+    id SERIAL PRIMARY KEY,
+    content TEXT,
+    embedding VECTOR(1536)  -- 向量维度
+);
+```
+
+- 插入向量数据时直接使用形如`'[e1,e2..]'`的字符串插入
+
+**相似度检索**
+
+基于向量相似度对数据进行排序以查询相似度高的向量。
+
+```sql
+SELECT *
+FROM items
+ORDER BY embedding <=> '[0.1, 0.2, ...]' --  余弦相似度(COSINE)
+LIMIT 5;
+
+SELECT *
+FROM items
+ORDER BY embedding <-> '[...]' -- 欧式距离（L2）
+LIMIT 5;
+
+SELECT *
+FROM items
+ORDER BY embedding <#> '[...]' -- 内积(IP)
+LIMIT 5;
+```
+
+**向量索引**
+
+```
+CREATE INDEX ON items
+USING ivfflat/hnsw (embedding vector_cosine_ops)
+WITH (lists = 100);
+```
+
+- 推荐使用`hnsw`。
 
 # 小知识
 
