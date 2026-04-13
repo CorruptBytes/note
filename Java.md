@@ -1282,9 +1282,67 @@ executor.submit(TtlRunnable.get(() -> {
 }));
 ```
 
+## 引用类型
 
+Java 中除了直接使用对象类型的引用接收对象，还提供了一些特殊引用类型，它们会影响垃圾回收器对对象的处理。Java 在 **`java.lang.ref` 包**中定义了 4 种引用类型：
 
-# 模块化
+|            引用类型             | 强度 |                        GC 对象可达性                        |                            特点                            |
+| :-----------------------------: | ---- | :---------------------------------------------------------: | :--------------------------------------------------------: |
+| **强引用（Strong Reference）**  | 最强 |                GC 不会回收，只要有强引用存在                |      普通的对象引用，如 `Object obj = new Object();`       |
+|  **软引用（Soft Reference）**   | 较强 |                  只有在内存不足时才会回收                   |                常用于缓存，保证尽量不被回收                |
+|  **弱引用（Weak Reference）**   | 弱   | GC 一旦发现只被弱引用引用的对象，无论内存是否充足，都会回收 |          适合做注册表、ThreadLocal等，生命周期短           |
+| **虚引用（Phantom Reference）** | 最弱 |      无法通过虚引用访问对象，GC 回收时会被加入引用队列      | 主要用于对象回收前的清理操作（配合 `ReferenceQueue` 使用） |
+
+<h4>强引用</h4>
+
+是 Java 默认的引用类型，只要对象有强引用存在，GC 不会回收。
+
+```java
+Object obj = new Object();
+```
+
+<h4>软引用</h4>
+
+如果一个对象只有软引用关联到它，则垃圾回收器会在程序内存不足时，将软引用的对象回收。
+
+```java
+SoftReference<MyObject> softRef = new SoftReference<>(new MyObject());
+softRef.get()//获得软引用对象
+```
+
+- `SoftReference`对象需要被强引用关联，否则它也会被回收，进而导致它引用的对象被回收。
+
+- 当软引用对象被回收时，应该将`SoftReference`也一起回收。Java定义了`ReferenceQueue<T>`队列，当创建软引用时，可以传入这个队列。当软引用对象被回收时，会将`SoftReference`放入这个队列。可以再程序中通过轮询队列来回收`SoftReference`对象。
+
+  ```
+  
+  ```
+
+<h4>弱引用</h4>
+
+只被弱引用关联的对象，在垃圾回收时无论内存是否充足一定会被回收掉。
+
+```java
+WeakReference<MyObject> weakRef = new WeakReference<>(new MyObject());
+```
+
+- 弱引用也提供了队列的机制，可以通过队列将`WeakReference`对象回收。
+
+<h4>虚引用</h4>
+
+虚引用也叫幽灵引用/幻影引用，不能通过虚引用对象获取到包含的对象。虚引用唯一的用途是当对象被垃圾回收器回收时可以接收到对应的通知。Java中使用`PhantomReference`实现了虚引用
+
+- 直接内存中为了及时知道直接内存对象不再使用，从而回收内存，使用了虚引用来实现。
+
+<h4>终结器引用</h4>
+
+终结器引用不是一种引用类型，而是 JVM为了处理 `finalize()` 而引入的延迟回收机制。
+
+当 GC 发现对象可被回收时，如果对象覆盖了 `finalize()`，则不会立即回收。JVM 会将该对象放入 **Finalizer Reference 队列**，等待单独的 Finalizer 线程执行 `finalize()` 方法。`finalize()` 执行完后，对象才会真正进入可回收状态。
+
+- 仅用于在对象被回收前执行清理逻辑。
+- 无法保证 `finalize()` 会立即执行，也不保证一定执行（GC 不一定触发）。
+- 已经被 Java 官方标记为**不推荐使用**（Java 9+ 推荐使用 `Cleaner` 或 `PhantomReference`）。
 
 **I/O操作**
 
