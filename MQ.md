@@ -414,11 +414,14 @@ MQ 通常保证“至少一次投递（At-Least-Once)，因此还需要保证消
 <h4>生产者(<code>Producer</code>)</h4>
 
 负责发送消息，支持同步 / 异步 /单向发送。
+- **同步：** 发送消息后阻塞等待`Broker`响应成功后再向下执行
+- **异步：** 发送消息后不阻塞继续向下执行，通过回调的方式异步处理`Broker`响应。
+- **单向：** 只负责发送消息，发送后
 
 <h4>消费者(<code>Consumer</code>)</h4>
 
 负责消费消息，支持两种消费模式：集群消费(负载均衡)，广播消费(全部消费)。
-
+同时消费者支持推(push)和拉(pull)两种方式获取消息，推为`Broker`主动推送消息，拉为消费者主动拉取。默认采用拉(Pull)模式
 - 在`RocketMQ`中，多个消费者可以组成消费者组(`ConsumerGroup`)，消费者组中的消费者共享消费进度，不同消费者组互不影响。因为每一个消费者组都会在 `Broker` 端维护 自己独立的 `offset`(消费进度)。
 
 <h4><code>Broker</code></h4>
@@ -439,3 +442,12 @@ MQ 通常保证“至少一次投递（At-Least-Once)，因此还需要保证消
 <h4><code>NameServer</code></h4>
 
 一个轻量级注册中心，管理`Broker`状态，为`Producer`/`Consumer`提供路由。
+
+## `SpringBoot`整合`RocketMQ`
+
+**起步依赖**
+
+```
+<dependency>
+
+```
