@@ -1570,7 +1570,7 @@ public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisC
 
 # `Pub/Sub`
 
-`Pub/Sub`(发布订阅)是`Redis2.0`引入的消息传递模型。在`Pub/Sub`模型中，消费者可以订阅一个或多个`channel`，生产者向对应`channel`发送消息后，所有订阅者都会接收到消息。
+`Pub/Sub`(发布订阅)是`Redis2.0`引入的消息传递模型。在`Pub/Sub`模型中，**生产者不直接发送给消费者，而是发送到“主题/通道”，由系统负责分发给订阅者**。消费者可以订阅一个或多个`channel`，生产者向对应`channel`发送消息后，所有订阅者都会接收到消息。
 
 <h4>命令</h4>
 

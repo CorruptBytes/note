@@ -396,16 +396,14 @@ MQ 通常保证“至少一次投递（At-Least-Once)，因此还需要保证消
 
 <h3>特点</h3>
 
-- **高性能：**吞吐量高(单机支持百万级 QPS)，延迟低。
+- **高性能：**吞吐量高(单机支持百万级 QPS )，延迟低。
 - **高可用：**`Broker`支持主从复制，自动故障转移
-- **多种消息类型：**支持普通消息，顺序消息(可保证顺序消费)，延时消息，事务消息(解决分布式事务问题)。
+- **多种消息类型：**支持普通消息，顺序消息(可保证顺序消费)，延时消息，事务消息，批量消息。
 - **多种消费模式：**支持集群消费(负载均衡)和广播消费(每个消费者都消费)。
 
-<h3><code>Topic-Queue</code>消息模型</h3>
+<h3>消息模型</h3>
 
-通过 `Topic`（主题）对消息进行逻辑分组，每个 `Topic` 可以关联多个 `Queue` 以实现消息的并行投放，其中每个 `Queue` 内的消息是有序的。消费者从 `Queue` 中消费消息，在同一消费组内，同一时刻一个 `Queue` 只能被一个消费者消费，这种模型称为 `Topic-Queue` 模型。
-
-- 不同消费组的消费者可以同时消费一个`Queue`中的消息，它们互不影响。
+`RocketMQ` 基于 `Pub/Sub` 模型实现。通过 `Topic`（主题）对消息进行逻辑分组，生产者在发送消息时需要指定消息所属的 `Topic`。每个 `Topic` 可以关联多个 `MessageQueue`，`MessageQueue` 是消息的实际存储与传递单元。一个 `Topic` 通过划分多个 `MessageQueue` 来提升消息的并行处理能力与负载均衡能力，其中每个 `MessageQueue` 内的消息是有序的。消费者订阅 `Topic` 后，会从该 `Topic` 下的多个 `Queue` 中拉取消息进行消费。
 
 ## 架构
 
@@ -414,22 +412,28 @@ MQ 通常保证“至少一次投递（At-Least-Once)，因此还需要保证消
 <h4>生产者(<code>Producer</code>)</h4>
 
 负责发送消息，支持同步 / 异步 /单向发送。
-- **同步：** 发送消息后阻塞等待`Broker`响应成功后再向下执行
-- **异步：** 发送消息后不阻塞继续向下执行，通过回调的方式异步处理`Broker`响应。
-- **单向：** 只负责发送消息，发送后
+- **同步：** 发送消息后阻塞等待`Broker`响应成功后再向下执行。适用于可靠性要求高，但吞吐量较低的场景。
+- **异步：** 消息由专门的 IO 线程发送，当前线程不会阻塞，并通过回调的方式异步处理`Broker`响应。异步发送适用于吞吐量高但对可靠性有要求的场景，防止消息发送阻塞响应。
+- **单向：** 只负责发送消息，完全不等待任何返回。单向发送适用于不要求可靠性的场景，可以处理的吞吐量是最高的。
 
 <h4>消费者(<code>Consumer</code>)</h4>
 
-负责消费消息，支持两种消费模式：集群消费(负载均衡)，广播消费(全部消费)。
-同时消费者支持推(push)和拉(pull)两种方式获取消息，推为`Broker`主动推送消息，拉为消费者主动拉取。默认采用拉(Pull)模式
-- 在`RocketMQ`中，多个消费者可以组成消费者组(`ConsumerGroup`)，消费者组中的消费者共享消费进度，不同消费者组互不影响。因为每一个消费者组都会在 `Broker` 端维护 自己独立的 `offset`(消费进度)。
+消费者负责消费消息。在`RocketMQ`中，多个消费者可以组成消费者组(`ConsumerGroup`)
+
+消费者组支持两种消费模式：集群模式(负载均衡)，广播模式(广播消费)。
+
+集群模式下负载均衡，一个消费者组中的所有消费者共享消费进度，一个`Queue`可以关联一个消费者，同一时刻一个 `Queue` 只能被一个消费者消费，每一个消费者组在 `Broker` 端维护自己独立的消费进度；广播模式下消息以广播方式分发，每个消费者都会独立消费该 `Topic `下的所有 `Queue`，各自在本地独立维护一份消费进度。
+
+- 无论是集群模式，还是广播模式，不同消费者组都是相互独立，互不影响的。
+
+消费者支持推(push)和拉(pull)两种方式获取消息，推为`Broker`主动推送消息，拉为消费者主动拉取。默认采用拉模式
 
 <h4><code>Broker</code></h4>
 
 `RocketMQ`的核心组件，负责消息存储，消息转发以及消息进度管理。
 
 - 为保证高可用，支持主从集群。`Master`负责读写,`Slave`负责备份数据。当主节点宕机时，可以自动故障转移。
-- 为提高吞吐量，可以部署`Broker`集群，一个`Topic`下的多个队列可以分布在不同的`Broker`节点，同时`Producer` 会在多个 `Queue` 之间轮询发送，以保证负载均衡。
+- 为提高吞吐量，可以部署`Broker`集群，一个`Topic`下的多个队列可以分布在不同的`Broker`节点中，同时`Producer` 会在多个 `Queue` 之间轮询发送，以保证负载均衡。
 
 **`CommitLog`**
 
@@ -442,6 +446,319 @@ MQ 通常保证“至少一次投递（At-Least-Once)，因此还需要保证消
 <h4><code>NameServer</code></h4>
 
 一个轻量级注册中心，管理`Broker`状态，为`Producer`/`Consumer`提供路由。
+
+- `NameServer`无状态，可以部署独立的多个实例形成集群。
+
+<h4><code>Proxy</code></h4>
+
+`Proxy`是`RocketMQ5.0`引入的新的核心组件，它是一个**网关层**。通过`Proxy`，客户端不再直连 `Broker / NameServer`，而是统一通过 `Proxy` 访问消息系统。
+
+`Proxy`统一了客户端访问入口，支持协议转换，负载均衡，安全控制。
+
+- `Proxy`无状态，支持多实例部署。
+
+## 消息类型
+
+`RocketMQ`支持普通消息，顺序消息(可保证顺序消费)，延时消息，事务消息(解决分布式事务问题)等多种消息类型。
+
+**延时消息**
+
+生产者将消息发送后，`Broker`会先将消息存储到内部的延迟队列中。等待延迟时间到达后，再将消息重新投递到对应`Topic`中。
+
+**批量消息**
+
+将多条消息合并成一个消息，一次性发送出去。减少了网络IO，可以提升吞吐量。
+
+- 批量消息的最大消息大小受`Broker`中配置的影响(默认是4MB)，考虑吞吐量与因素延迟，重试成本，内存压力等因素的平衡，建议不超过1MB
+- 批量消息中的所有消息必须属于同一个`Topic`。
+- 批量消息中的单条消息不可以是延迟消息，事务消息。
+
+<h3>事务消息</h3>
+
+事务消息用来解决本地事务与消息发送的一致性问题，避免出现本地事务失败，而消息发送成功或本地事务成功，而消息发送失败的情况。
+
+<h4>原理</h4>
+
+事务消息基于两阶段提交的思想实现。
+
+1. `Producer`会先向`Broker`发送一条半消息。半消息存储在一个`RocketMQ`中一个特定的`Topic`中，对消费者不可见。
+2. `Producer`端执行本地事务，并在事务执行完成后将事务的执行结果作为消息发送到`Broker`。
+3. 根据本地事务的结果：如果成功，将半消息转移到目标`Topic`，消息变为可消费；如果失败，将半消息删除。
+
+为了防止`Producer`出现异常，无法向`Broker`发送事务执行结果，`Broker`会主动进行事务回查，也就是主动询问`Producer`事务的状态。
+
+<h4>事务消息状态</h4>
+
+事务消息具有三种状态：
+
+|        状态        |       含义       |
+| :----------------: | :--------------: |
+|  `COMMIT_MESSAGE`  | 提交，消息可消费 |
+| `ROLLBACK_MESSAGE` |  回滚，消息删除  |
+|      `UNKNOW`      |  未知，等待回查  |
+
+最初消息为`UNKONW`状态，当本地事务执行完成后，会将执行结果发送到`Broker`，根据执行结果改变事务消息的状态并执行对应操作。
+
+## 消息过滤
+
+`RocketMQ`支持多种方式在 Topic 内进一步细分消息，从而帮助消费者在`Topic`下进行更精细的消息过滤。
+
+### `Tag`
+
+生产者在发送消息时为其指定`Tag`，消费者订阅`Topic`时，可以订阅指定`Tag`的消息，且可以通过`tag1 || tag2`的形式同时订阅多个`Tag`。
+
+- 生产者不能控制指定`Tag`的消息进入指定的队列，只能负载均衡分配。
+
+**原理**
+
+`Broker`会把`Tag`转换为一个hash值(`TagCode`)。`Consumer`在拉取消息时,`Broker`会根据`TagCode`进行快速过滤。
+
+### `SQL92`
+
+生产者在发送消息时可以为消息设置自定义属性(key-value 形式，值为字符串)。消费者在订阅时，可以通过 `SQL92` 标准的条件表达式基于属性对消息进行筛选过滤，`Broker` 会执行表达式筛选，只将符合条件的消息返回给消费者。
+
+- 消息过滤是在`Broker`端进行的。
+
+## 消息持久化
+
+## 安装部署
+
+<h3><code>RocketMQ</code>安装</h3>
+
+`RocketMQ`本身包含两个核心组件：`NameServer`和`Broker`，这两个组件可以独立部署启动。
+
+**拉取官方镜像**
+
+```
+docker pull apache/rocketmq
+```
+
+**创建网络**
+
+```
+docker network create rmq-net
+```
+
+**启动`NameServer`**
+
+使用`RocketMQ`中`bin`目录下的`mqnamesrv.sh`命令启动`NameServer`服务
+
+```
+docker run -d \
+--name rmqnamesrv \
+--network rmq-net \
+-p 9876:9876 \
+apache/rocketmq \
+sh mqnamesrv
+```
+
+**启动`Broker`**
+
+使用`RocketMQ`中`bin`目录下的`mqborker.sh`命令启动`Broker`服务。 
+
+```
+docker run -d \
+--name rmqbroker \
+--network rmq-net \
+-p 10911:10911 -p 10909:10909 \
+-e "NAMESRV_ADDR=rmqnamesrv:9876" \
+apache/rocketmq \
+sh mqbroker -n rmqnamesrv:9876
+```
+
+- 启动后，可以使用`RocketMQ`的`bin`目录下的`tools.sh`进行快速测试
+
+  ```sh
+  #发送消息，默认发送1000条
+      sh tools.sh org.apache.rocketmq.example.quickstart.Producer
+  #接收消息，会一直等待并接收消息
+  sh tools.sh org.apache.rocketmq.example.quickstart.Consumer
+  ```
+
+<h3><code>RocketMQ Dashboard</code>安装</h3>
+
+`RocketMQ`内部没有提供可视化管理工具，需要使用外部控制台查看其运行情况。`RocketMQ Dashboard`是`Apache RocketMQ` 官方提供的一个基于`Web`服务的可视化管理工具
+
+**拉取镜像**
+
+```
+docker pull apacherocketmq/rocketmq-dashboard
+```
+
+**启动容器**
+
+```
+docker run -d \
+  --name rmqdashboard \
+  --network rmq-net \
+  -p 8080:8082 \
+  -e "JAVA_OPTS=-Drocketmq.namesrv.addr=rmqnamesrv:9876" \
+  apacherocketmq/rocketmq-dashboard
+```
+
+- `NameServer`地址通过`Java`选项配置，如果在同一个`Docker`网络中，可以直接使用容器名。
+
+## Java客户端
+
+**`Mvaen`依赖坐标**
+
+```xml
+        <dependency>
+            <groupId>org.apache.rocketmq</groupId>
+            <artifactId>rocketmq-client</artifactId>
+            <version>5.1.0</version>
+        </dependency>
+```
+
+### 生产者
+
+<h3><code>DefaultMQProducer</code></h3>
+
+默认的生产者实现。
+
+```java
+DefaultMQProducer producer = new DefaultMQProducer("test");
+producer.setNamesrvAddr("172.31.85.64:9876");
+//start方法会进行大量初始化配置，必须在发送消息前调用
+producer.start();
+producer.send(new Message("study","你好".getBytes(StandardCharsets.UTF_8)));
+producer.shutdown();
+```
+
+<h4>常用属性</h4>
+
+**所属生产者组**
+
+```
+private String producerGroup;
+```
+
+<h3>常用方法</h3>
+
+**同步发送消息**
+
+```
+SendResult send(final Message msg);
+SendResult send(final Message msg, final long timeout);
+```
+
+**异步发送消息**
+
+通过回调函对`Broker`响应进行处理。
+
+```
+void send(final Message msg, final SendCallback sendCallback);
+```
+
+**单向发送消息**
+
+```java
+void sendOneway(final Message msg)
+```
+
+**发送顺序消息**
+
+在`MesageQueueSelector`中根据`arg`选择一个`Queue`，保证消息发送到一个队列，进而保证有序性。
+
+```
+SendResult send(final Message msg, final MessageQueueSelector selector, final Object arg)
+```
+
+- 使用顺序消息时，消费者端也要配合进行顺序消费
+
+<h3><code>TransactionMQProducer</code></h3>
+
+
+
+### 消费者
+
+<h3><code>DefaultMQPushConsumer</code></h3>
+
+使用推模式获取消息的消费者。
+
+```
+
+```
+
+<h3><code>DefaultMQPullConsumer</code></h3>
+
+默认的拉模式消费者实现，目前已经废弃，推荐使用`DefaultLitePullConsumer`替代。
+
+
+
+```java
+//通过为Message设置延时属性发送延时消息
+void setDelayTimeLevel(int level)
+```
+
+### 消息
+
+<h4><code>Message</code></h4>
+
+在`RocketMQ`中使用`Message`对象封装一条消息。
+
+**延迟消息**
+
+通过为`Message`设置`delayTimeLevel`属性或将其变为延迟消息。
+
+```
+void setDelayTimeLevel(int level)
+```
+
+**批量消息**
+
+将多条`Message`组装到一个`Collection`中使用生产者的`send`发送，即为批量消息。
+
+```
+SendResult send(final Collection<Message> msgs)
+```
+
+### 消息过滤
+
+### `Tag`
+
+**生产者指定消息`Tag`**
+
+```
+Message message = new Message();
+message.setTags("tag1");
+```
+
+**消费者订阅指定`Tag`**
+
+```java
+void subscribe(final String topic, final String subExpression)
+
+DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("group1");
+consumer.subscribe("topic","tag1 || tag2");
+//或者使用MessageSelector
+consumer.subscribe("topic", MessageSelector.byTag("tag1 || tag2"));
+```
+
+- `||`表示同时订阅多个`Tag`的消息
+
+### `SQL92`
+
+**指定消息属性**
+
+```java
+Message message = new Message();
+message.putUserProperty("user","xiaoliu");
+```
+
+**消费者设置SQL表达式**
+
+```java
+void subscribe(final String topic, final MessageSelector selector)
+
+consumer.subscribe("topic", MessageSelector.bySql("user = xiaoliu"));
+```
+
+
+
+- 只有推模式的消费者客户端可以使用`SQL`过滤，拉模式无法使用。
+
+
 
 ## `SpringBoot`整合`RocketMQ`
 
