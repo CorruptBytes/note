@@ -348,7 +348,32 @@ public class EmailService {
   并通过配置属性绑定机制，将配置文件中的属性绑定到对应的属性类实例上。
 - 通常用于自动配置功能中，通过本地文件配置外部自动配置导入的Bean
 
-# 小知识
+## 其他注解
+
+<h3><code>@EventListener</code></h3>
+
+是**Spring 的事件监听器注解**，添加在方法上，用来让某个方法在**特定事件发生时自动执行**。
+
+```
+@EventListener
+public void onReady(ApplicationReadyEvent event) {
+    // 启动完成后执行
+}
+```
+
+- 默认情况下`@EventListener`的方法是同步执行的，会阻塞应用线程。可以通过添加`@Async`注解使其异步执行。
+
+**`Spring`的常见内置事件**
+
+|            事件            |           说明           |
+| :------------------------: | :----------------------: |
+| `ApplicationStartingEvent` |        应用刚启动        |
+| `ApplicationPreparedEvent` |      上下文准备完成      |
+|  `ContextRefreshedEvent`   |       容器刷新完成       |
+|  `ApplicationReadyEvent`   | ✅ 完全启动完成（最常用） |
+|  `ApplicationFailedEvent`  |         启动失败         |
+
+# **小知**识
 
 ## 手动创建Boot工程
 
@@ -758,3 +783,41 @@ public class WebConfig implements WebMvcConfigurer {
 
 - 正向代理和反向代理的本质是主动使用代理的一方不同。对于正向代理，是客户端主动使用代理访问目标服务器；对于反向代理，是 服务端主动通过代理服务器接收客户端请求并转发到真实后端服务器，从而隐藏真实后端。
 - 正向代理典型用途有VPN，网络爬虫；反向代理典型用途有负载均衡，避免跨域，CDN加速。
+
+## `SpringBoot`如何实现启动时缓存预热
+
+通过`SpringBoot`提供的生命周期钩子，在应用准备完成后对缓存进行预热。
+
+```
+@Component
+public class CacheWarmUp {
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void warmUp() {
+        System.out.println("开始缓存预热...");
+
+        List<User> users = userService.listHotUsers();
+
+        for (User user : users) {
+            redisTemplate.opsForValue().set(
+                "user:" + user.getId(),
+                user
+            );
+        }
+
+        System.out.println("缓存预热完成");
+    }
+}
+```
+
+为防止预热阻塞主进程，可以通过线程池异步执行
+
+为防止多节点重复预热，可以使用分布式锁
+
+为了防止预热打爆数据库，需要分批读取数据并加载到缓存。

@@ -1439,7 +1439,7 @@ EXPLAIN|DESC SQL
 | 表示 SELECT 的类型，常见的取值有  SIMPLE（简单表，即不使用表连接或者子查询）、PRIMARY（主查询，即外层的查询）、     UNION（UNION 中的第二个或者后面的查询语句）、     SUBQUERY（SELECT/WHERE之后包含了子查询）等 | select_type |
 | 表示返回结果的行数占需读取行数的百分比，filtered  的值越大越好。 |  filtered   |
 
-# MVCC
+# `MVCC`
 
 多版本并发控制(Multi-Version Concurrency Control)是通过为同一条记录维护多个版本，在不加锁的情况下实现事务隔离，从而提高并发性能并避免读写阻塞的的并发控制机制。
 
@@ -1456,8 +1456,6 @@ EXPLAIN|DESC SQL
 - 普通的`select`语句属于快照读
 
 **MVCC的实现依赖于数据库记录中的三个隐式字段，undo log 日志和read view。**
-
-
 
 **隐藏字段**
 
