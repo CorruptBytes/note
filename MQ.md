@@ -768,3 +768,34 @@ consumer.subscribe("topic", MessageSelector.bySql("user = xiaoliu"));
 <dependency>
 
 ```
+
+# `Kafaka`
+
+`Kafaka`是由`LinkedIn`开发的分布式事件流平台，后捐赠给`Apache`基金会成为其顶级项目。`Kafaka`最初用于构建高吞吐的分布式日志系统，解决大规模日志收集与实时数据流传输问题。
+
+它基于发布订阅模型，同时支持数据持久化，因此也常常作为高吞吐消息队列使用。
+
+<h3>基本概念</h3>
+
+<h4><code>Topic</code>(主题)</h4>
+
+消息的逻辑分类
+
+<h4><code>Partition</code>(分区)</h4>
+
+对`Topic`的物理拆分，一个`Topic`可以在物理上拆分成多个`Partition`，不同的`Partition`可以在不同的服务器上，这增强了`Kafaka`的并行能力，为`Kafaka`提供了水平扩展能力。每个`Partition`都是一个有序日志。
+
+<h4><code>Offset</code>(偏移量)</h4>
+
+当消息存储到分区后，`Kafaka`会记录其偏移量，这是每条消息在 `Partition` 中的唯一编号,`Consumer`通过`Offset`记录消费进度。
+
+<h4><code>Record</code>(记录)</h4>
+
+`Record`是 `Kafka` 中最基本的消息单位，一条`Record`包含以下结构：
+
+- **`Key`：**可选，相同`Key`的`Record`会进入同一个分区，从而保证消息局部有序。如果`Key`为空，则会以轮询的方式发送到各个分区中。
+- **`Value`：**消息携带的真正数据内容。
+
+## `Replication`(副本机制)
+
+`Replication`是`Kafaka`为了保证分区数据可靠性提供的功能。每个`Partition`可以有多个副本(通过`replication-factor`设置)
