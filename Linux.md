@@ -415,6 +415,48 @@ Swap:          2G          0G         2G
   - `-r`:查看内核版本
   - `-s`：查看内核名
 
+# 环境变量
+
+`Linux`中有多种类型的环境变量，根据变量的生命周期与作用范围可分为：
+
+<h4>临时环境变量</h4>
+
+只对当前终端生效，关闭终端环境变量就失效，通常用于测试
+
+```bash
+export CANDIDATE=192.168.1.10
+```
+
+<h4>用户环境变量</h4>
+
+可在当前用户下永久生效，通过修改 `~/.bashrc` 或 `~/.zshrc`配置,在文件中添加一行：
+
+```
+export CANDIDATE=192.168.1.10
+```
+
+并在添加后执行`source ~/.bashrc`以使环境变量立即生效
+
+<h4>系统级环境变量</h4>
+
+对所有用户永久生效，通过修改`/etc/environment`添加
+
+```
+CANDIDATE=192.168.1.10
+```
+
+在修改后，执行`source /etc/environment`以使环境变量立即生效。
+
+**访问环境变量**
+
+在终端以及大部分配置文件中，通过`$<environment_name>`来访问环境变量
+
+```
+echo $<environment_name>
+```
+
+
+
 # WSL
 
 `Windows Subsystem for Linux`，适用于Windows的Linux子系统，是Windows自带的可选功能，可以在 Windows 里**直接运行Linux环境，而无需安装虚拟机**。
