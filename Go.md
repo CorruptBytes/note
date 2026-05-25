@@ -11,11 +11,7 @@
 
 # `go`
 
-`go`是Go 语言官方提供的命令行工具，用于编译、运行、构建和管理 Go 项目。可以在`Go`官网进行下载安装
-
-```
-go.dev
-```
+`go`是Go 语言官方提供的命令行工具，用于编译、运行、构建和管理 Go 项目。
 
 `go`的命令格式类似于`docker`，格式为
 
@@ -57,13 +53,16 @@ go env -w GOPATH=path
 go mod init <模块名>
 ```
 
+# 命名规范
 
+## 访问权限
+
+`Go`中通过变量，接口名、结构体名、方法名，结构体字段名等首字母的大小写定义其可见性。
+
+- 首字母大写表示public（可导出），其他`package`可以直接访问
+- 首字母小写 = private（包内私有），其他`package`无法访问
 
 # 变量
-
-## 变量命令规范
-
-- 如果变量想要被其他包访问，变量的首字母要大写，否则编译报错
 
 ## 变量声明
 
@@ -82,17 +81,19 @@ var 变量名 type
 此时编译器可根据字面量自动推断出变量类型，无需显示指定类型。
 
 ```go
-var 变量名 type = 字面量
+var 变量名 type = 值
 
-var 变量名 = 字面量
+var 变量名 = 值
 
-变量名 := 字面量
+变量名 := 值
 ```
 
 **同时声明多个变量并赋值**
 
 ```
 var v1,v2... = value1,value2...
+var v1,v2 ... type = value1,value2...
+v1,v2 := value1,value2
 ```
 
 ## 变量类型
@@ -110,7 +111,7 @@ var v1,v2... = value1,value2...
 常量是特殊的变量，它必须在声明时赋值，并且赋值后无法再修改常量的值
 
 ```
-const v1 [type] =  value2
+const v1 type =  value2
 ```
 
 # 规范
@@ -191,7 +192,9 @@ const v1 [type] =  value2
 **声明**
 
 ```
-var arr [len]type = [len][type]{e1,e2...}
+var arr [len]type = [len]type{e1,e2...}
+//快速声明字节数组
+[]byte(字符串)
 ```
 
 **索引访问元素**
@@ -493,6 +496,202 @@ varName.FuncName()
   }
   ```
 
+## `tag`
+
+可以通过为结构体的字段设置`tag`从而控制其序列化时的行为。
+
+```go
+type SturctName struct {
+	field1 type1 `json:"tag"`,
+	//-代表序列化时忽略此字段
+    field2 type2 `json:"-"`
+    //omitempty代表如果此字段为空，则忽略
+    field3 type3 `json:"omitempty"`
+}
+```
+
+# 类型别名
+
+可以为类型起别名，此时无法为该别名绑定方法。
+
+```
+type Ailas = type
+```
+
+
+
+# 自定义类型
+
+可以通过`type`自定义类型
+
+```
+type NewType type
+```
+
+同时可以为该新类型绑定方法，与结构体绑定方法一致
+
+# 接口
+
+接口用于规范结构体的行为，`Go`中的接口无需结构体显示的实现，而是基于发现的机制，当接口体中存在与接口中签名一致的函数，则被发现为此接口的实现类型。
+
+- 接口也是一种数据类型
+
+```
+type interfaceName interface {
+	funcName()
+}
+```
+
+## 类型断言
+
+通过断言来将接口转换为具体类型
+
+```
+switch obj.(type) {
+	case type1 :
+	case type2 :
+}
+//第一个参数接受断言的类型变量，第二个参数为是否为对应类型
+c,ok := ojb.(Realtype)
+//如果不接受第一个参数，如果断言失败，则会直接抛出异常
+c := obj.(Realtype)
+```
+
+## 空接口
+
+空接口就是不声明任何方法接口，这表明任何类型都可以被发现为空接口，也就是任何类型都实现了空接口。
+
+```
+type emptyInterface interface{
+
+}
+//简洁写法
+func Print(val any)
+func Print(val interface{})
+```
+
+## 接口嵌入
+
+`Go`中的接口除了声明方法，也可以组合其他接口，类似于继承效果。
+
+```go
+//语法
+type InterfaceName interface {
+    OtherInterface1
+    OtherInterface2
+}
+//示例
+type Reader interface {
+	Read([]byte) (int, error)
+}
+
+type Writer interface {
+	Write([]byte) (int, error)
+}
+//等价于此接口组合了内部其他接口的方法声明。
+type ReadWriter interface {
+	Reader
+	Writer
+}
+```
+
+
+
+# 协程
+
+协程是Go的一大特色
+
+```
+go 函数调用
+```
+
+如果主线程结束，协程的任务即使没有执行完，也会结束，`go`提供了`wait`工具以进行同步
+
+```
+var wait sync.WaitGroup
+
+wait.add(任务数)
+每一个任务结束
+wait.Done();
+主线程执行
+wait.Wait()
+```
+
+## `channel`
+
+`channel`用于在协程中传递数据
+
+```go
+//第一个type表示这是一个channel，第二个表示channel中放哪种类型的数据
+//创建一个长度为0的信道，如果信道满了，其他数据会等待
+var chan1 chan int = make(chan int)
+//向信道中传递数据
+chanName <- value
+//从信道中取数据
+ value,ok <- chanName
+//ok表示信道是否关闭，此时可以停止取数据
+//信道需要手动关闭
+close(chanName)
+//信道也可以使用for循环获取数据
+for value := range chanName {
+    
+}
+```
+
+## `select`
+
+用于同时使用多个信道的场景，防止代码阻塞在某个信道的接收上
+
+```go
+select {
+case value1 := <- chan1:{
+	}
+case value2 := <- chan2 :{
+
+}
+}
+```
+
+## 超时处理
+
+```go
+select {
+	case value1 <- chan1 : {
+
+	}
+    case <- time.After(超时时间) :{
+        
+    }
+}
+```
+
+# 线程安全
+
+### `Mutex`
+
+互斥锁
+
+```
+var lock sync.Mutex
+
+//加锁
+lock.Lock()
+//解锁
+lock.Unlock()
+```
+
+### `Map`
+
+一个线程安全的`Map`
+
+```
+var map = sync.Map{}
+```
+
+# 异常处理
+
+# 
+
 # 常用包
 
 ## `fmt`
@@ -513,3 +712,36 @@ fmt.Printf()
 func SPrintf() string
 ```
 
+## `json`
+
+序列化为json格式字符串
+
+```
+json.Marshal()
+```
+
+## `net/http`
+
+Go内置的 Http 服务开发包。
+
+**监听端口**
+
+```go
+http.ListenAndServe("0.0.0.0:8080", nil)
+//0.0.0.0表示监听所有 IPv4 地址，可以简写为
+http.ListenAndServe(":8080", nil)
+```
+
+**注册路径对应的处理器函数**
+
+```
+func HandleFunc(pattern string, handler func(ResponseWriter, *Request))
+```
+
+
+
+# `Gin`
+
+`Gin`是一个基于 Go 的轻量级 Web 框架，它基于 Go 内置的 `net/http`包开发，提供了高效、快速、易用的 Web 服务开发体验。
+
+**`net/http`包的缺陷**
