@@ -613,6 +613,8 @@ CMD ["java", "-jar", "app.jar"]
   docker [command] --help
   ```
 
+## 命令别名
+
 # DockerCompose
 
 Docker Compose可以基于Compose文件帮我们快速的部署分布式应用，而无需手动一个个创建和运行容器。Compose文件是一个文本文件，通过指令定义集群中的每个容器如何运行。
@@ -670,6 +672,8 @@ Service根据其访问范围和用途有多类：
 <h4>secret</h4>
 
 它用于将一些敏感信息封装起来，供应用程序读取和使用
+
+
 
 # 小知识
 

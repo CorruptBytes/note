@@ -53,6 +53,16 @@ go env -w GOPATH=path
 go mod init <模块名>
 ```
 
+<h2><code>go get</code></h2>
+
+在模块中添加并下载依赖。
+
+```
+go get 依赖URL
+```
+
+
+
 # 命名规范
 
 ## 访问权限
@@ -114,6 +124,8 @@ v1,v2 := value1,value2
 const v1 type =  value2
 ```
 
+- `const`只能定义编译期常量，也就是常量值必须是编译期可确定的常量表达式，例如整数、浮点数、布尔值、字符串以及由常量表达式计算出的值。
+
 # 规范
 
 - `Go`要求：一个目录就是一个`package`，同一个目录下所有的`go`文件必须属于同一个`package`。
@@ -121,6 +133,8 @@ const v1 type =  value2
 - `Go`强制所有流程控制语句均使用`{}`，以避免歧义
 
 # 数据类型
+
+- `Go`中通过预定义的标识符`nil`表示指针、`channel`、`function`、`interface`、`map`或`slice`类型的零值。
 
 ## 基本数据类型
 
@@ -246,6 +260,8 @@ key2: value2,
 //map[key]会返回两个值，第一个是value,第二个表示是否获取到元素(bool)
 value,ok := map[key]
 ```
+
+
 
 # 运算符
 
@@ -376,6 +392,64 @@ for _, v := range arr {
 
 - `Go`中同样具有`continue`和`break`控制循环语句。
 
+# 结构体
+
+结构体是一种复合数据类型，可以组合多种数据类型形成一种新的数据类型
+
+- `Go`中结构体变量中直接保存数据，而不是地址。
+- `Go`中可以使用结构体的指针直接操作结构体，因为编译器会自动添加解引用，即将`p.name`转换为`(*p).name`
+- 结构体的零值为每个字段的零值组成的结构体
+
+```
+//声明
+type Name struct {
+    field1 type1,
+    field2 type2,
+}
+//为结构体绑定方法
+func (varName StructName) FuncName() {
+
+}
+//默认为结构体绑定的方法为值传递，无法直接修改结构体中的字段
+//想要修改结构体字段，需要使用引用传递
+func(varName *StructName) FuncName(){
+
+}
+//使用
+varName := StructName{field1: value1}
+//调用方法
+varName.FuncName()
+```
+
+- 如果字段类型为结构体，可以省略为`StructName`声明字段，此时字段名即为结构体名。
+
+- Go中不存在继承，而是通过组合实现继承的功能；如果被组合的结构体的字段名与其他结构体不冲突，则可以直接使用`son.field`访问被组合结构体的字段。
+
+  ```
+  type Father struct {
+  
+  }
+  type Son struct {
+    Father
+  }
+  ```
+
+## `tag`
+
+可以通过为结构体的字段设置`tag`从而控制其序列化时的行为。
+
+```go
+type SturctName struct {
+	field1 type1 `json:"tag"`,
+	//-代表序列化时忽略此字段
+    field2 type2 `json:"-"`
+    //omitempty代表如果此字段为空，则忽略
+    field3 type3 `json:"omitempty"`
+}
+```
+
+
+
 # 函数
 
 函数是一段封装了特定功能的可重用代码块，函数可以接收输入(参数) 并返回输出(返回值)。
@@ -444,6 +518,8 @@ func test(name *string)
 var name = "123"
 test(&name)
 ```
+- 不只是函数调用时的参数，函数的返回值也是值传递
+
 ## `init`函数/`defer`函数
 
 `init`函数是`Go`中一个特殊的函数，它会在`main`函数执行前被自动调用
@@ -461,54 +537,7 @@ defer func() {
 }
 defer 单条语句
 ```
--`defer`函数虽然在`return`前才执行，但函数体中只能访问在`defer`函数定义前声明的变量
-
-# 结构体
-
-```
-//声明
-type Name struct {
-    field1 type1,
-    field2 type2,
-}
-//为结构体绑定方法
-func (varName StructName) FuncName() {
-
-}
-//默认为结构体绑定的方法为值传递，无法直接修改结构体中的字段
-//想要修改结构体字段，需要使用引用传递
-func(varName *StructName) FuncName(){
-
-}
-//使用
-varName := StructName{field1: value1}
-//调用方法
-varName.FuncName()
-```
-- 如果字段类型为结构体，可以省略为`StructName`声明字段，此时字段名即为结构体名。
-- Go中不存在继承，而是通过组合实现继承的功能；如果被组合的结构体的字段名与其他结构体不冲突，则可以直接使用`son.field`访问被组合结构体的字段。
-  ```
-  type Father struct {
-
-  }
-  type Son struct {
-    Father
-  }
-  ```
-
-## `tag`
-
-可以通过为结构体的字段设置`tag`从而控制其序列化时的行为。
-
-```go
-type SturctName struct {
-	field1 type1 `json:"tag"`,
-	//-代表序列化时忽略此字段
-    field2 type2 `json:"-"`
-    //omitempty代表如果此字段为空，则忽略
-    field3 type3 `json:"omitempty"`
-}
-```
+- `defer`函数虽然在`return`前才执行，但函数体中只能访问在`defer`函数定义前声明的变量
 
 # 类型别名
 
@@ -517,8 +546,6 @@ type SturctName struct {
 ```
 type Ailas = type
 ```
-
-
 
 # 自定义类型
 
@@ -561,7 +588,7 @@ c := obj.(Realtype)
 
 空接口就是不声明任何方法接口，这表明任何类型都可以被发现为空接口，也就是任何类型都实现了空接口。
 
-```
+```go
 type emptyInterface interface{
 
 }
@@ -569,6 +596,8 @@ type emptyInterface interface{
 func Print(val any)
 func Print(val interface{})
 ```
+
+- `Go`中为空接口定义了别名`any`，可以直接使用`any`接收任意类型的值
 
 ## 接口嵌入
 
@@ -745,3 +774,78 @@ func HandleFunc(pattern string, handler func(ResponseWriter, *Request))
 `Gin`是一个基于 Go 的轻量级 Web 框架，它基于 Go 内置的 `net/http`包开发，提供了高效、快速、易用的 Web 服务开发体验。
 
 **`net/http`包的缺陷**
+
+**安装依赖**
+
+```
+go get github.com/gin-gonic/gin
+```
+
+<h3>使用</h3>
+
+1. 获得`Gin`引擎，通过引擎进行绑定路由等操作
+
+   ```go
+   //方法签名
+   func Default(opts ...OptionFunc) *Engine
+   
+   r := gin.Default()
+   ```
+
+2. 挂载路由
+
+   ```go
+   func (group *RouterGroup) GET(relativePath string, handlers ...HandlerFunc) IRoutes
+   
+   r.GET("/index",func (c *gin.Context)  {
+   		
+   })
+   ```
+
+3. 绑定监听端口
+
+   ```
+   r.Run(":8080")
+   ```
+
+## 运行模式
+
+`Gin`有两种运行模式，即`debug`与`release`，`debug`模式会打印日志，而`release`不会，默认`gin`运行在`debug`模式下。
+
+```
+gin.SetMode("release")
+```
+
+## `Context`
+
+`Context` 封装了一次 HTTP 请求处理过程中的上下文环境，包含请求数据、响应写入能力、中间件控制以及请求生命周期中的共享数据。
+
+Gin 在每次收到请求时，都会创建一个 `*gin.Context`，并把它传给处理函数。
+
+### 响应
+
+<h4>响应<code>Json</code></h4>
+
+<h4>响应<code>Html</code></h4>
+
+1. 在`Go`中，如果想要响应`Html`需要先将`Html`文件进行加载。
+
+   ```go
+   //LoadHTMLXXX系列方法
+   func (engine *Engine) LoadHTMLGlob(pattern string)
+   func (engine *Engine) LoadHTMLFiles(files ...string)
+   func (engine *Engine) LoadHTMLFS(fs http.FileSystem, patterns ...string) 
+   
+   //使用示例
+   r.LoadHTMLGlob("./templates/*") //表示加载该路径下的所有HTML文件
+   ```
+
+2. 然后通过`Context`的`HTML`方法返回响应。
+
+   ```go
+   //第三个参数表示向HTML传递数据，可以使用Go自己的模板语言在HTML中获取数据并渲染
+   func (c *Context) HTML(code int, name string, obj any)
+   ```
+
+   - 使用`{{.fieldName}}`访问具体数据，其中.表示模板本身
+
