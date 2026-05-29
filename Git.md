@@ -107,7 +107,50 @@ git config --global credential.helper store
 git config [--global|--system] --list
 ```
 
-<h2>分支操作</h2>
+## 分支操作
+
+### `git branch`
+
+`git branch`用于分支管理，包括列出，创建或删除分支。
+
+<h4>创建分支</h4>
+
+```
+git branch <new-branch>
+```
+
+<h4>删除分支</h4>
+
+```
+git branch (-d | -D) [-r] <branchname>…
+```
+
+**`-d`|`--delete`**
+
+删除分支。该分支必须已经完全合并到它的上游分支（upstream branch）中；如果没有设置上游分支，则必须已经完全合并到当前 HEAD 所指向的分支中。
+
+**`-D`**
+
+`--delete --force`的简写。
+
+### `git switch`
+
+`git switch`主要用于切换分支。
+
+<h4>创建并切换分支</h4>
+
+```
+git switch [<options>] (-c|-C) <new-branch> [<start-point>]
+```
+
+**`-c <new-branch>`|`--create <new-branch>`**
+
+相当于：
+
+```bash
+$ git branch <new-branch>
+$ git switch <new-branch>
+```
 
 
 
