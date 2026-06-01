@@ -432,6 +432,83 @@ MQ通常默认保证最少一次的消费传递语义。
 
 `RocketMQ` 基于 `Pub/Sub` 模型实现。通过 `Topic`（主题）对消息进行逻辑分组，生产者在发送消息时需要指定消息所属的 `Topic`。每个 `Topic` 可以关联多个 `MessageQueue`，`MessageQueue` 是消息的实际存储与传递单元。一个 `Topic` 通过划分多个 `MessageQueue` 来提升消息的并行处理能力与负载均衡能力，其中每个 `MessageQueue` 内的消息是有序的。消费者订阅 `Topic` 后，会从该 `Topic` 下的 `Queue` 中拉取消息进行消费。
 
+## 安装部署
+
+<h3><code>RocketMQ</code>安装</h3>
+
+`RocketMQ`本身包含两个核心组件：`NameServer`和`Broker`，这两个组件可以独立部署启动。
+
+**拉取官方镜像**
+
+```
+docker pull apache/rocketmq
+```
+
+**创建网络**
+
+```
+docker network create rmq-net
+```
+
+**启动`NameServer`**
+
+使用`RocketMQ`中`bin`目录下的`mqnamesrv.sh`命令启动`NameServer`服务
+
+```
+docker run -d \
+--name rmqnamesrv \
+--network rmq-net \
+-p 9876:9876 \
+apache/rocketmq \
+sh mqnamesrv
+```
+
+**启动`Broker`**
+
+使用`RocketMQ`中`bin`目录下的`mqborker.sh`命令启动`Broker`服务。 
+
+```
+docker run -d \
+--name rmqbroker \
+--network rmq-net \
+-p 10911:10911 -p 10909:10909 \
+-e "NAMESRV_ADDR=rmqnamesrv:9876" \
+apache/rocketmq \
+sh mqbroker -n rmqnamesrv:9876
+```
+
+- 启动后，可以使用`RocketMQ`的`bin`目录下的`tools.sh`进行快速测试
+
+  ```sh
+  #发送消息，默认发送1000条
+      sh tools.sh org.apache.rocketmq.example.quickstart.Producer
+  #接收消息，会一直等待并接收消息
+  sh tools.sh org.apache.rocketmq.example.quickstart.Consumer
+  ```
+
+<h3><code>RocketMQ Dashboard</code>安装</h3>
+
+`RocketMQ`内部没有提供可视化管理工具，需要使用外部控制台查看其运行情况。`RocketMQ Dashboard`是`Apache RocketMQ` 官方提供的一个基于`Web`服务的可视化管理工具
+
+**拉取镜像**
+
+```
+docker pull apacherocketmq/rocketmq-dashboard
+```
+
+**启动容器**
+
+```
+docker run -d \
+  --name rmqdashboard \
+  --network rmq-net \
+  -p 8080:8082 \
+  -e "JAVA_OPTS=-Drocketmq.namesrv.addr=rmqnamesrv:9876" \
+  apacherocketmq/rocketmq-dashboard
+```
+
+- `NameServer`地址通过`Java`选项配置，如果在同一个`Docker`网络中，可以直接使用容器名。
+
 ## 架构
 
 `RocketMQ`的工作架构为：
@@ -563,83 +640,6 @@ autoCreateTopicEnable=true
 - 消息过滤是在`Broker`端进行的。
 
 ## 消息持久化
-
-## 安装部署
-
-<h3><code>RocketMQ</code>安装</h3>
-
-`RocketMQ`本身包含两个核心组件：`NameServer`和`Broker`，这两个组件可以独立部署启动。
-
-**拉取官方镜像**
-
-```
-docker pull apache/rocketmq
-```
-
-**创建网络**
-
-```
-docker network create rmq-net
-```
-
-**启动`NameServer`**
-
-使用`RocketMQ`中`bin`目录下的`mqnamesrv.sh`命令启动`NameServer`服务
-
-```
-docker run -d \
---name rmqnamesrv \
---network rmq-net \
--p 9876:9876 \
-apache/rocketmq \
-sh mqnamesrv
-```
-
-**启动`Broker`**
-
-使用`RocketMQ`中`bin`目录下的`mqborker.sh`命令启动`Broker`服务。 
-
-```
-docker run -d \
---name rmqbroker \
---network rmq-net \
--p 10911:10911 -p 10909:10909 \
--e "NAMESRV_ADDR=rmqnamesrv:9876" \
-apache/rocketmq \
-sh mqbroker -n rmqnamesrv:9876
-```
-
-- 启动后，可以使用`RocketMQ`的`bin`目录下的`tools.sh`进行快速测试
-
-  ```sh
-  #发送消息，默认发送1000条
-      sh tools.sh org.apache.rocketmq.example.quickstart.Producer
-  #接收消息，会一直等待并接收消息
-  sh tools.sh org.apache.rocketmq.example.quickstart.Consumer
-  ```
-
-<h3><code>RocketMQ Dashboard</code>安装</h3>
-
-`RocketMQ`内部没有提供可视化管理工具，需要使用外部控制台查看其运行情况。`RocketMQ Dashboard`是`Apache RocketMQ` 官方提供的一个基于`Web`服务的可视化管理工具
-
-**拉取镜像**
-
-```
-docker pull apacherocketmq/rocketmq-dashboard
-```
-
-**启动容器**
-
-```
-docker run -d \
-  --name rmqdashboard \
-  --network rmq-net \
-  -p 8080:8082 \
-  -e "JAVA_OPTS=-Drocketmq.namesrv.addr=rmqnamesrv:9876" \
-  apacherocketmq/rocketmq-dashboard
-```
-
-- `NameServer`地址通过`Java`选项配置，如果在同一个`Docker`网络中，可以直接使用容器名。
 
 ## Java客户端
 

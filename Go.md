@@ -849,3 +849,19 @@ Gin 在每次收到请求时，都会创建一个 `*gin.Context`，并把它传�
 
    - 使用`{{.fieldName}}`访问具体数据，其中.表示模板本身
 
+# `go-redis`
+
+**安装依赖**
+
+```
+go get github.com/redis/go-redis/v9
+```
+
+# `rocketmq-clients`
+
+**安装依赖**
+
+```
+go get github.com/apache/rocketmq-client-go/v2
+```
+
