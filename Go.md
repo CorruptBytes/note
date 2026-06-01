@@ -855,3 +855,19 @@ Gin 在每次收到请求时，都会创建一个 `*gin.Context`，并把它传�
 **`ORM`**
 ORM意为 Object Relational Mapping，即对象关系映射，用于解决对象和关系型数据库之间的数据交互问题。
 使用一个类表示一张表，类中的属性表示表的字段，类的一个实例话对象映射为表中的一条记录。
+# `go-redis`
+
+**安装依赖**
+
+```
+go get github.com/redis/go-redis/v9
+```
+
+# `rocketmq-clients`
+
+**安装依赖**
+
+```
+go get github.com/apache/rocketmq-client-go/v2
+```
+
