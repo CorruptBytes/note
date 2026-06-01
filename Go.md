@@ -766,6 +766,7 @@ http.ListenAndServe(":8080", nil)
 ```
 func HandleFunc(pattern string, handler func(ResponseWriter, *Request))
 ```
+## `database/sql`
 
 
 
@@ -849,3 +850,8 @@ Gin 在每次收到请求时，都会创建一个 `*gin.Context`，并把它传�
 
    - 使用`{{.fieldName}}`访问具体数据，其中.表示模板本身
 
+# Gorm
+
+**`ORM`**
+ORM意为 Object Relational Mapping，即对象关系映射，用于解决对象和关系型数据库之间的数据交互问题。
+使用一个类表示一张表，类中的属性表示表的字段，类的一个实例话对象映射为表中的一条记录。
