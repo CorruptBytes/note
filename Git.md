@@ -152,6 +152,15 @@ $ git branch <new-branch>
 $ git switch <new-branch>
 ```
 
+### `git merge`
+
+用于合并分支。
+
+```
+git merge
+```
+
+- `--abort`：在合并冲突未解决的情况下使用，可以恢复到合并前状态。
 
 
 <h2>创建并初始化仓库</h2>
