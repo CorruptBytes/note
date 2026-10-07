@@ -5,6 +5,7 @@ React官方提供了`create-react-app`的脚手架，可以快速初始化React�
 
 ```
 npx create-react-app my-app
+npx create-react-app my-app --template typescript
 ```
 
 
@@ -72,3 +73,11 @@ const [count, setCount] = useState(0);
 ```
 
 - 第一个返回值为状态变量，第二个返回值为修改状态值的函数。
+
+# 创建React项目模板
+
+```
+npm create vite@latest my-app -- --template react
+npm create vite@latest frontend -- --template react-ts
+```
+

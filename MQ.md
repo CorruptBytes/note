@@ -595,13 +595,13 @@ autoCreateTopicEnable=true
 
 <h3>事务消息</h3>
 
-事务消息用来解决本地事务与消息发送的一致性问题，避免出现本地事务失败，而消息发送成功或本地事务成功，而消息发送失败的情况。
+事务消息用于解决本地事务与消息发送的一致性问题，保证本地事务执行结果和消息最终投递状态一致，避免出现本地事务失败，而消息发送成功或本地事务成功，而消息发送失败的情况。
 
 <h4>原理</h4>
 
 事务消息基于两阶段提交的思想实现。
 
-1. `Producer`会先向`Broker`发送一条半消息。半消息存储在一个`RocketMQ`中一个特定的`Topic`中，对消费者不可见。
+1. `Producer`会先向`Broker`发送一条半消息(`Half Message`)。半消息存储在一个`RocketMQ`中一个特定的`Topic`中，对消费者不可见。
 2. `Producer`端执行本地事务，并在事务执行完成后将事务的执行结果作为消息发送到`Broker`。
 3. 根据本地事务的结果：如果成功，将半消息转移到目标`Topic`，消息变为可消费；如果失败，将半消息删除。
 
@@ -916,6 +916,43 @@ Broker 是 Kafka 集群中的一个服务器节点，负责存储 Partition 数�
 ## 消息传递语义
 
 `Kafka`默认支持最少一次的消息传递语义，但也提供了支持实现其他两种常见消息传递语义的机制。
+
+## 消息聚合与压缩
+
+生产者不一定每调用一次 `send()` 就发一次网络请求。而是可以按照`Topic/Partition`将多条消息聚合为一个批次(`Record Batch`)再发送，并支持对整个 `Record Batch`压缩。
+
+主要有以下配置项：
+
+```
+batch.size=65536
+linger.ms=10
+compression.type=zstd
+```
+
+- `batch.size`：单个 Partition 批次的目标大小上限。
+- `linger.ms`：批次未满时，最多等待多久以聚合更多消息。
+- `compression.type`：对整个 Record Batch 压缩，可选 `none`、`gzip`、`snappy`、`lz4`、`zstd`。
+
+Producer 发送压缩后的 Record Batch 后，Broker 通常会：
+
+1. 接收 Record Batch；
+2. 校验并追加到 Partition Log；
+3. 将压缩批次写入磁盘；
+4. Consumer Fetch 时继续传输这个批次。
+
+大体链路为
+
+```
+Producer 压缩一次
+        ↓
+Broker 存储压缩数据
+        ↓
+Consumer 获取压缩数据
+        ↓
+Consumer 解压一次
+```
+
+- 在`Consumer`端，`Kafka`客户端会将批次解压还原为`ConsumerRecord`交给业务层。
 
 
 

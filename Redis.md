@@ -2365,10 +2365,10 @@ Redis主从集群采用读写分离，如果主节点出现故障，则整个集
 
 一旦`Sentinel`判断`master`为客观下线，则说明`master`故障，`Sentinel`需要在`slave`中选择一个作为新的`master`,选择依据为：
 
-- 首先判断`slave`与`master`最近断连时间，如果超过指定值(`down-after-milliseconds` * 10)，则说明slave 极可能已经 **与 master 严重脱节**，直接排除该`slave`。
+- 首先判断`slave`与`master`最近断连时间，如果超过指定值(`down-after-milliseconds` * 10)，则说明 slave 极可能已经 **与 master 严重脱节**，直接排除该`slave`。
 - 然后判断`slave`的`slave-priority`值，越小优先级越高，如果是0则直接排除。
 - 如果`salve-priority`一样，则判断`slave`节点的复制偏移量`offset`，越大说明数据更新，优先级更高
-- 最后判断`slave`的`runId`，越小优先级越高
+- 如果`offset`仍然相同，判断`slave`的`runId`，越小优先级越高
   - `runId`在实例启动时由`Redis`自动生成。
 
 选出新的主节点后，故障转移的步骤如下：

@@ -1,6 +1,64 @@
-# 事务
+# 常用  `Spring`  注解
 
-## 事务失效
+## `@Transactional`
+
+该注解添加在方法上，可以为方法开启数据库事务。
+
+<h4>实现原理</h4>
+
+`@Transactional`基于 `AOP` 实现
+
+### 核心属性
+
+<h4><code>propagation</code></h4>
+
+用于指定事务传播行为，也就是一个事务方法调用另一个事务方法时事务的处理方式。
+
+- 本质上就是定义一个事务方法被调用时，Spring 根据当前事务上下文采取何种处理方式。
+
+`Spring` 定义了七种事务传播行为，位于 `Propagation` 枚举类中：
+
+|   Propagation   |        已存在事务        |  没有事务  |
+| :-------------: | :----------------------: | :--------: |
+|   `REQUIRED`    |           加入           |    创建    |
+| `REQUIRES_NEW`  |  挂起旧事务，创建新事务  |    创建    |
+|   `SUPPORTS`    |           加入           | 非事务运行 |
+| `NOT_SUPPORTED` |         挂起事务         | 非事务运行 |
+|   `MANDATORY`   |           加入           |    报错    |
+|     `NEVER`     |           报错           | 非事务运行 |
+|    `NESTED`     | 创建嵌套事务/`Savepoint` |  创建事务  |
+
+- 默认行为为 `REQUIRED`。
+
+<h4><code>isolation</code></h4>
+
+`isolation` 指定事务隔离级别。
+
+具体类别定义在`Isolation`枚举类中，`Spring`没有在 `SQL` 标准外定义新的事务隔离级别：
+
+```
+DEFAULT
+READ_UNCOMMITTED
+READ_COMMITTED
+REPEATABLE_READ
+SERIALIZABLE
+```
+
+- 默认隔离级别为 `DEFAULT`，`DEFAULT`使用底层数据库默认隔离级别。
+
+<h4><code>timeout</code></h4>
+
+指定事务超时时间，单位为秒。如果底层事务系统支持，超过时间后事务会回滚。
+
+<h4><code>rollbackFor</code></h4>
+
+<h4><code>readOnly</code></h4>
+
+声明一个事务是否是**只读事务**，默认为 `false` 。当 `readOnly=true`时，表示事务按语义应该只读，事务管理器、ORM 或数据库驱动可以利用这个信息做只读优化
+
+- `readOnly=true` 并不代表该事务禁止写操作，这取决于具体实现。
+
+### 事务失效
 
 有时候会出现在方法上添加了`@Transactional`注解，但运行时事务没有开启。常见的事务失效原因有：
 
@@ -127,6 +185,8 @@ public void saveUser() {
 **4. 回滚异常类型不匹配**
 
 **原因**：默认情况下，Spring 事务只对 `RuntimeException` 及其子类异常进行回滚
+
+- 受检异常默认不会回滚
 
 **解决方案**：通过 `rollbackFor` 属性指定异常类型。
 
@@ -659,6 +719,14 @@ public class AppConfig{
 }
 ```
 
+### 生命周期管理
+
+#### `SmartLifecycle`
+
+Spring 提供的一个**生命周期管理接口**,用于让Bean 随着 Spring 容器的启动和关闭，自动执行启动、停止等操作。
+
+- 常用于**Netty Server、TCP Server、后台线程、消费者、调度器** 这类“需要显式启动和关闭”的组件。
+
 ## 作用域
 
 > Bean的作用域(Scope)定义了Bean的生命周期和可见性，如`Bean`如何被创建，如何被销毁以及是否可以被多个用户共享
@@ -694,7 +762,7 @@ public class AppConfig{
 
 # `SpringTask`
 
-> `Spring`提供API快速编写单机定时任务。
+`Spring`提供API快速编写单机定时任务。
 
 在底层由`TaskScheduler`实现，本质是**线程池**+**时间触发器**
 

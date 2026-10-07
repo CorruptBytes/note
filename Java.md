@@ -247,6 +247,19 @@ obj instanceof Class name
 
 - 保证变量在多线程环境的可见性
 
+## `var`
+
+`var` 是**局部变量类型推断**关键字，从 **Java 10** 开始支持。
+
+```
+var name = "Tom";
+```
+
+编译器会根据右侧表达式，在**编译期**推断出变量的真实类型。
+
+- 变量仍然是静态类型，不是 JavaScript 那样的动态类型。
+- `var` 只能用于局部变量
+
 # Object
 
 > Java中所有类的父类。
@@ -801,7 +814,9 @@ JDK1.7中的HashMap使用头插法向链表插入元素，在多线程的环境�
 
 ### `LinkedHashMap`
 
-继承自`HashMap`，底层仍然使用数组存储数据，但额外维护了一个双向链表结构，可以按照键值对的插入顺序或访问顺序遍历元素。
+`HashMap`的子类，底层仍然使用数组存储数据，但额外维护了一个双向链表结构，可以按照键值对的插入顺序或访问顺序遍历元素。
+
+- 链表头部为最老的元素，尾部为最新的元素。
 
 <h4><code>LinkedHashMap</code>实现<code>LRU</code>缓存</h4>
 
@@ -810,6 +825,28 @@ JDK1.7中的HashMap使用头插法向链表插入元素，在多线程的环境�
 当`LinkedHashMap`的`accessOrder`设置为`true`时，它会通过双向链表按照访问顺序对元素进行维护，其中头节点为最久未访问的元素。并提供了`removeEldestEntry`方法。当插入新元素后，会自动调用此方法，如果返回`true`，则删除双向链表中最老的元素(也就是头节点元素)。
 
 因此只要重写`removeEldestEntry`方法，当`Map`中的元素个数超过容量时，返回`true`，便可以自动删除最久未被访问的元素。
+
+```java
+    class LRUCache {
+        LinkedHashMap<Integer,Integer> cache;
+        public LRUCache(int capacity) {
+            cache = new LinkedHashMap<>(capacity,1,true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<Integer, Integer> eldest) {
+                    return size() > capacity;
+                }
+            };
+        }
+
+        public int get(int key) {
+            return cache.getOrDefault(key,-1);
+        }
+
+        public void put(int key, int value) {
+            cache.put(key, value);
+        }
+    }
+```
 
 
 
@@ -2498,7 +2535,12 @@ System.out.println(System.getProperty("user.dir"));
 
 - 最少知识原则(Law of Demeter)
 
-## 创建对象的多种方式
+## 创建对象几种方式
+
+大致可分为两大类：
+
+- 调用构造方法创建，`new`关键字，反射创建都属于这一类
+- 绕过构造方法创建， `clone()`，通过已有对象复制创建新对象，反序列化，例如 `ObjectInputStream.readObject()`，读取字节流恢复对象。
 
 **new关键字**
 
@@ -2776,6 +2818,34 @@ lambda表达式要求内部引用的外部局部变量必须是`final`不变的
 ## Log4j
 
 `Log4j` 是 `Apache`基金会开发的开源日志记录工具，用于记录 Java 程序运行时的各类数据。
+
+## `package-info`
+
+`package-info.java`是 Java 用来给 **package 提供文档、注解和元信息** 的特殊源文件。
+
+```java
+/**
+ * 用户领域模块。
+ *
+ * <p>
+ * 负责用户注册、认证、资料管理等功能。
+ * </p>
+ */
+package com.example.user;
+```
+
+`package-info.java`主要有三个功能：
+
+- **提供包级别文档：**配合 `JavaDoc`
+
+- **定义包级注解：**注解除了作用在类，方法，字段上，也可以作用在包上
+
+  ```
+  @ParametersAreNonnullByDefault
+  package com.example.service;
+  ```
+
+- **声明包级别配置：**通过包注解声明包级别配置
 
 # 面试题
 
